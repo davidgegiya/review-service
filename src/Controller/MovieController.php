@@ -24,26 +24,13 @@ class MovieController
      * Create movie by name
      * @param string $name
      * @return bool
-     * @throws ParametersException
      */
     public function createMovie(string $name): bool {
-        $dto = new MovieDTO($name);
-
-        $validator = Validation::createValidator();
-
-        $errors = $validator->validate($dto);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getPropertyPath() . ': ' . $error->getMessage();
-            }
-            throw new ParametersException('Can not create movie. Wrong parameters format: ' . var_export($errorMessages, true));
-        }
-
         $movie = new Movie();
         $movie->setName($name);
 
         $this->em->persist($movie);
+        $this->em->flush();
         return true;
     }
 }

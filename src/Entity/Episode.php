@@ -21,21 +21,13 @@ class Episode
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $release_date = null;
 
-    #[ORM\Column]
-    private ?int $movie_id = null;
 
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'episode')]
     private ?Collection $reviews = null;
 
-    public function getMovieId(): ?int
-    {
-        return $this->movie_id;
-    }
-
-    public function setMovieId(?int $movie_id): void
-    {
-        $this->movie_id = $movie_id;
-    }
+    #[ORM\ManyToOne(targetEntity: Movie::class, inversedBy: 'episodes')]
+    #[ORM\JoinColumn(name: 'movie_id', referencedColumnName: 'id', nullable: false)]
+    private Movie $movie;
 
     public function getId(): ?int
     {
@@ -69,7 +61,7 @@ class Episode
     /**
      * @return mixed
      */
-    public function getReviews()
+    public function getReviews(): mixed
     {
         return $this->reviews;
     }
@@ -77,8 +69,18 @@ class Episode
     /**
      * @param mixed $reviews
      */
-    public function setReviews($reviews): void
+    public function setReviews(mixed $reviews): void
     {
         $this->reviews = $reviews;
+    }
+
+    public function getMovie(): Movie
+    {
+        return $this->movie;
+    }
+
+    public function setMovie(Movie $movie): void
+    {
+        $this->movie = $movie;
     }
 }

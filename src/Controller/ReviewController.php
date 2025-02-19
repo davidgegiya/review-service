@@ -11,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -18,29 +19,12 @@ class ReviewController extends AbstractController
 {
     #[Route('/review', name: 'make_review', methods: ['POST'])]
     public function makeReview(
+        #[MapRequestPayload] ReviewDTO $dto,
         Request $request,
         ValidatorInterface $validator,
         EntityManagerInterface $em,
         SentimentAnalyzer $sentimentAnalyzer
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
-
-        $dto = new ReviewDTO(
-            $data['score'] ?? null,
-            $data['review_text'] ?? null,
-            $data['name'] ?? null,
-            $data['contact'] ?? null,
-            $data['episode_id'] ?? null,
-        );
-
-        $errors = $validator->validate($dto);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getPropertyPath() . ': ' . $error->getMessage();
-            }
-            return new JsonResponse(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
-        }
 
         $episode = $em->getRepository(Episode::class)->find($dto->episodeId);
         if (!$episode) {

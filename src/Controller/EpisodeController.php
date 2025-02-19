@@ -38,7 +38,8 @@ class EpisodeController extends AbstractController
     public function createEpisode(
         string $name, string $release_date, int $movieId
     ): bool {
-        $movie = $this->em->getRepository(Movie::class)->find($movieId);
+        $movie = $this->em->find(Movie::class, $movieId);
+//        $movie = $this->em->getRepository(Movie::class)->find($movieId);
         if (!$movie) {
             throw new ParametersException('Movie with id ' . $movieId . ' was not found');
         }
@@ -46,7 +47,7 @@ class EpisodeController extends AbstractController
         $episode = new Episode();
         $episode->setName($name);
         $episode->setReleaseDate(new \DateTime($release_date));
-        $episode->setMovieId($movieId);
+        $episode->setMovie($movie);
 
         $this->em->persist($episode);
         $this->em->flush();

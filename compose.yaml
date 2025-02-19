@@ -1,25 +1,46 @@
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symfony_app
+    working_dir: /var/www/symfony
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - .:/var/www/symfony
+    environment:
+      SYMFONY_ENV: dev
+      DATABASE_URL: "postgresql://symfony_user:symfony_password@db:5432/review_service"
+    depends_on:
+      - db
+    command: >
+      sh -c "
+      composer install &&
+      bin/console doctrine:database:create --if-not-exists &&
+      bin/console doctrine:database:drop --env=test --force --if-exists &&
+      bin/console doctrine:database:create --env=test --if-not-exists &&
+      bin/console doctrine:migrations:migrate --env=test --no-interaction &&
+      if ! bin/console doctrine:query:sql 'SELECT 1 FROM movie LIMIT 1;' > /dev/null 2>&1; then
+        bin/console doctrine:migrations:migrate --no-interaction &&
+        bin/console doctrine:fixtures:load --no-interaction;
+      fi &&
+      ./vendor/bin/phpunit --configuration phpunit.xml.dist &&
+      php -S 0.0.0.0:8000 -t public"
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_DB: review_service
+      POSTGRES_USER: symfony_user
+      POSTGRES_PASSWORD: symfony_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./.docker/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
-###> doctrine/doctrine-bundle ###
-  database_data:
-###< doctrine/doctrine-bundle ###
+  db-data:
