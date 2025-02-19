@@ -47,7 +47,7 @@ class EpisodeControllerTest extends AbstractWebTestCase
         $episode = new Episode();
         $episode->setName('S01E01');
         $episode->setReleaseDate(new \DateTime('2013-12-02'));
-        $episode->setMovieId($this->movie->getId());
+        $episode->setMovie($this->movie);
         $this->entityManager->persist($episode);
         $this->entityManager->flush();
         return $episode;
@@ -75,7 +75,7 @@ class EpisodeControllerTest extends AbstractWebTestCase
         $this->assertCount(1, $episodeFromDatabase);
         $this->assertSame('S01E01', $episodeFromDatabase[0]->getName());
         $this->assertSame('2013-12-02', $episodeFromDatabase[0]->getReleaseDate()->format('Y-m-d'));
-        $this->assertSame($this->movie->getId(), $episodeFromDatabase[0]->getMovieId());
+        $this->assertSame($this->movie->getId(), $episodeFromDatabase[0]->getMovie()->getId());
         $this->assertEmpty($episodeFromDatabase[0]->getReviews());
     }
 

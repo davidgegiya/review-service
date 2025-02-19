@@ -6,19 +6,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class ReviewDTO
 {
-    #[Assert\NotBlank]
-    #[Assert\Range(min: 1, max: 5)]
-    public int $score;
 
-    #[Assert\NotBlank]
-    public string $reviewText;
-
-    public ?string $name = null;
-
-    public ?string $contact = null;
-    #[Assert\NotBlank]
-    #[Assert\Type(type: 'integer', message: "Episode ID must be an integer")]
-    public ?int $episodeId = null;
 
     /**
      * @param int $score
@@ -27,13 +15,25 @@ class ReviewDTO
      * @param string|null $contact
      * @param int|null $episodeId
      */
-    public function __construct(int $score, string $reviewText, ?string $name, ?string $contact, ?int $episodeId)
+    public function __construct(
+
+        #[Assert\NotBlank]
+        #[Assert\Range(min: 1, max: 5)]
+        #[Assert\Type(type: 'integer', message: "Score must be an integer")]
+        public int $score,
+
+        #[Assert\NotBlank]
+        public string $reviewText,
+
+        public ?string $name = null,
+
+        public ?string $contact = null,
+
+        #[Assert\NotBlank]
+        #[Assert\Type(type: 'integer', message: "Episode ID must be an integer")]
+        public ?int $episodeId = null
+    )
     {
-        $this->score = $score;
-        $this->reviewText = $reviewText;
-        $this->name = $name;
-        $this->contact = $contact;
-        $this->episodeId = $episodeId;
     }
 
 
