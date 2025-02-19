@@ -18,6 +18,8 @@ services:
       composer install &&
       bin/console doctrine:database:create --if-not-exists &&
       bin/console doctrine:migrations:migrate --no-interaction &&
+      bin/console doctrine:database:drop --env=test --force --if-exists &&
+      bin/console doctrine:database:create --env=test --if-not-exists &&
       bin/console doctrine:migrations:migrate --env=test --no-interaction &&
       bin/console doctrine:fixtures:load --no-interaction &&
       ./vendor/bin/phpunit --configuration phpunit.xml.dist &&
