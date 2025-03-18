@@ -41,6 +41,12 @@ jobs:
       - name: Set up Database URL
         run: echo "DATABASE_URL=postgresql://symfony_user:symfony_password@127.0.0.1:5432/review_service" >> $GITHUB_ENV
 
+      - name: Set APP_ENV to test
+        run: echo "APP_ENV=test" >> $GITHUB_ENV
+
+      - name: Clear Symfony Cache
+        run: bin/console cache:clear --env=test
+
       - name: Wait for PostgreSQL to be ready
         run: |
           echo "Waiting for PostgreSQL to start..."
