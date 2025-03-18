@@ -1,0 +1,52 @@
+name: Symfony CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: review_service
+          POSTGRES_USER: symfony_user
+          POSTGRES_PASSWORD: symfony_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U symfony_user -d review_service"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: docker-compose up -d db
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to start..."
+          until docker-compose exec -T db pg_isready -U symfony_user -d review_service; do
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Install Dependencies
+        run: docker-compose run --rm app composer install --no-interaction --prefer-dist
+
+      - name: Run Database Migrations
+        run: docker-compose run --rm app bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Load Fixtures
+        run: docker-compose run --rm app bin/console doctrine:fixtures:load --no-interaction
+
+      - name: Run Tests
+        run: docker-compose run --rm app ./vendor/bin/phpunit --configuration phpunit.xml.dist
