@@ -28,25 +28,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Compose
-        run: docker-compose up -d db
+      - name: Install PHP and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql
+          tools: composer
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist
 
       - name: Wait for PostgreSQL to be ready
         run: |
           echo "Waiting for PostgreSQL to start..."
-          until docker-compose exec -T db pg_isready -U symfony_user -d review_service; do
+          until PGPASSWORD=symfony_password psql -h localhost -U symfony_user -d review_service -c '\q'; do
             sleep 2
           done
           echo "PostgreSQL is ready!"
 
-      - name: Install Dependencies
-        run: docker-compose run --rm app composer install --no-interaction --prefer-dist
-
       - name: Run Database Migrations
-        run: docker-compose run --rm app bin/console doctrine:migrations:migrate --no-interaction
+        run: bin/console doctrine:migrations:migrate --no-interaction
 
       - name: Load Fixtures
-        run: docker-compose run --rm app bin/console doctrine:fixtures:load --no-interaction
+        run: bin/console doctrine:fixtures:load --no-interaction
 
       - name: Run Tests
-        run: docker-compose run --rm app ./vendor/bin/phpunit --configuration phpunit.xml.dist
+        run: ./vendor/bin/phpunit --configuration phpunit.xml.dist
