@@ -1,0 +1,65 @@
+name: Symfony CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: review_service_test
+          POSTGRES_USER: symfony_user
+          POSTGRES_PASSWORD: symfony_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U symfony_user -d review_service_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PHP and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql
+          tools: composer
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Set up Database URL
+        run: echo "DATABASE_URL=postgresql://symfony_user:symfony_password@127.0.0.1:5432/review_service" >> $GITHUB_ENV
+
+      - name: Set APP_ENV to test
+        run: echo "APP_ENV=test" >> $GITHUB_ENV
+
+      - name: Clear Symfony Cache
+        run: bin/console cache:clear --env=test
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to start..."
+          until PGPASSWORD=symfony_password psql -h localhost -U symfony_user -d review_service_test -c '\q'; do
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Run Database Migrations
+        run: bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Load Fixtures
+        run: bin/console doctrine:fixtures:load --no-interaction
+
+      - name: Run Tests
+        run: ./vendor/bin/phpunit --configuration phpunit.xml.dist
